@@ -1,0 +1,115 @@
+{% extends "admin/base_site.html" %}
+
+{% load badger_tags %}
+
+{% block title %}
+    Class badge awards
+{% endblock %}
+
+{% block content %}
+    {% csrf_token %}
+    <script type="text/javascript" src="/static/admin/js/jquery.js"></script>
+    <script type="text/javascript">
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!(/^http:.*/.test(settings.url)
+                        || /^https:.*/.test(settings.url))) {
+                    // Only send the token to relative URLs i.e. locally.
+                    xhr.setRequestHeader("X-CSRFToken",
+                            $('input[name="csrfmiddlewaretoken"]').val());
+                }
+            }
+        });
+    $(document).ready(function() {
+        $("#badge_info").click(function() { //hides when you click it. Need to replace with something useful
+            $("#badge_info").hide("slow");
+            $("#empty_filler").height(0);
+        });
+        $("img.badge").click(function() {
+            var id = $(this).attr("id").split("_");
+            var data = {student: id[0], badge: id[1]};
+
+            $("#badge_info").html("<H2>Info for " + data['student'] + ": " + data['badge'] + "</H2>")
+            $("#badge_info").show("slow", function() {
+                $("#empty_filler").height($("#badge_info").height());
+            });
+
+            if($(this).is('.no_award')) {
+                data['action'] = 'award'
+                $.post("/classbadges/action/", data, function(result) {
+                    if(result.awarded == "yes"){
+                        $("#" + result.student + "_" + result.badge).attr("class", "award");
+                    }else{
+                        alert("Something went wrong on the server, please contact your system admin")
+                    }
+                });
+            } else if ($(this).is(".award")) {
+                var sure = confirm("Are you sure you want to remove " + $(this).attr("id") + "?")
+                if (sure) {
+                    data['action'] = 'unaward'
+                    $.post("/classbadges/action/", data,  function(result) {
+                        if(result.unawarded == "yes"){
+                            $("#" + result.student + "_" + result.badge).attr("class", "no_award");
+                        }else{
+                            alert("Something went wrong on the server, please contact your system admin")
+                        }
+                    });
+                }
+            }
+
+        });
+    });
+    </script>
+
+<div id="content-left">
+    <style type="text/css">
+        img.no_award {
+            opacity: 0.4;
+            filter: alpha(opacity=40);
+        }
+    </style>
+
+    <table>
+        <tr>
+            <th>Student</th>
+            {% for badge in class_badges %}
+                <th>
+                    {{ badge.title }}
+                </th>
+            {% endfor %}
+        </tr>
+        {% for s in student_badge_awards %}
+            <tr>
+                <td> {{ s.0 }}</td>
+                {% for award in s.1 %}
+                    <td>
+                        <img src="{{ award.2 }}" height="48" width="48" id="{{ s.0 }}_{{ award.1 }}" class="badge {{ award.0 }}">
+                    </td>
+                {% endfor %}
+            </tr>
+        {%  endfor %}
+
+    </table>
+</div>
+
+<!-- This DIV appears and provides padding to allow scrolling to the bottom when the badge info div appears -->
+<div id="empty_filler" style="
+        position: relative;
+        width: 100%;
+        height: 0px;
+        "></div>
+
+<!-- Appears and shows badge info; will allow adding comments, and setting of progress -->
+    <div id="badge_info" style="
+        display: none;
+        position: fixed;
+        left: 0px;
+        bottom: 0px;
+        width: 100%;
+        min-height: 75px;
+        height: 20%;
+        background-color: #87ceeb;
+    ">
+    <h2>Badge/Award info</h2>
+    </div>
+{% endblock %}
