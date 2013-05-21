@@ -1,4 +1,4 @@
-from School.models import Subject, ClassGroup, Student, StudentEnrolment
+from School.models import SchoolClass, Student
 from badger.models import Badge, Award
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse
@@ -9,7 +9,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 @staff_member_required
 def class_badge_awards_view(request, class_code):
     #TODO - check access control - see which teachers teach this class
-    c = ClassGroup.objects.get(Code=class_code) #TODO - check cycle
+    c = SchoolClass.objects.get(Code=class_code) #TODO - check cycle
     class_badges = []
     for b in c.Subject.Badges.all():
         class_badges.append(b)
