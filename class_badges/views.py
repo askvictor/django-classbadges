@@ -22,11 +22,11 @@ def class_badge_awards_view(request, class_code):
     for s in c.students.all():
         awards = []
         for i in range(len(class_badges)):
-            if class_badges[i].is_awarded_to(s):
-                awards.append(("award", class_badges[i].slug, Award.objects.get(user=s, badge=class_badges[i]).image.url))
+            if class_badges[i].is_awarded_to(s.auth):
+                awards.append(("award", class_badges[i].slug, Award.objects.get(user=s.auth, badge=class_badges[i]).image.url))
             else:
                 awards.append(("no_award", class_badges[i].slug, class_badges[i].image.url))
-        student_badge_awards.append((s.username,awards))
+        student_badge_awards.append((s.timetable_id,awards))
 
     #get which of these badges have been awarded to these students
     return render_to_response('class_badge_awards.html',
@@ -36,17 +36,17 @@ def class_badge_awards_view(request, class_code):
 def award_badge_view(request):
     if request.method=="POST" and request.is_ajax():
         b = get_object_or_404(Badge, slug=request.POST['badge'])
-        s = get_object_or_404(Student, username=request.POST['student'])
+        s = get_object_or_404(Student, timetable_id=request.POST['student'])
 
         if request.POST['action'] == 'award':
-            a = b.award_to(awardee=s, awarder=request.user) #TODO include class name in a note (when notes/comments implemented)
+            a = b.award_to(awardee=s.auth, awarder=request.user) #TODO include class name in a note (when notes/comments implemented)
             if a:
-                response = json.dumps({"awarded": "yes", "student":s.username, "badge":b.slug})
+                response = json.dumps({"awarded": "yes", "student":s.timetable_id, "badge":b.slug})
             else:
                 response = json.dumps({"awarded": "no"})
             return HttpResponse(response, content_type="application/json")
         elif request.POST['action'] == 'unaward':
-            a = get_object_or_404(Award, badge=b, user=s)
+            a = get_object_or_404(Award, badge=b, user=s.auth)
             a.delete()
-            response = json.dumps({"unawarded": "yes", "student":s.username, "badge":b.slug})
+            response = json.dumps({"unawarded": "yes", "student":s.timetable_id, "badge":b.slug})
             return HttpResponse(response, content_type="application/json")
