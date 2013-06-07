@@ -23,7 +23,11 @@ def class_badge_awards_view(request, class_code):
         awards = []
         for i in range(len(class_badges)):
             if class_badges[i].is_awarded_to(s.auth):
-                awards.append(("award", class_badges[i].slug, Award.objects.get(user=s.auth, badge=class_badges[i]).image.url))
+                award = Award.objects.get(user=s.auth, badge=class_badges[i])
+                if award.image:
+                    awards.append(("award", class_badges[i].slug, award.image.url))
+                else:
+                    awards.append(("award", class_badges[i].slug, class_badges[i].image.url))
             else:
                 awards.append(("no_award", class_badges[i].slug, class_badges[i].image.url))
         student_badge_awards.append((s.timetable_id,awards))
